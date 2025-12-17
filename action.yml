@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-action.json
+
+name: "Build Cuckoo ISO Action"
+description: "Builds a Cuckoo ISO from a container image using the start.sh script."
+inputs:
+  container-image:
+    description: "Container image to use for the squashfs rootfs"
+    required: true
+  iso-path:
+    description: "Path to move the resulting ISO to"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Build ISO
+      run: ${{ github.action_path }}/start.sh
+      shell: bash
+      env:
+        SQUASHFS_CTR_IMG: ${{ inputs.container-image }}
+
+    - name: Move ISO
+      run: |
+        ISO_FILE=$(find "${{ github.action_path }}"/out -name "*.iso" -type f -print -quit)
+        if [ -z "$ISO_FILE" ]; then
+          echo "::error::Error: No ISO file found in out/ directory."
+          exit 1
+        fi
+        mkdir -p "$(dirname ${{ inputs.iso-path }})"
+        mv "$ISO_FILE" "${{ inputs.iso-path }}"
+        echo "ISO moved to ${{ inputs.iso-path }}"
+      shell: bash
