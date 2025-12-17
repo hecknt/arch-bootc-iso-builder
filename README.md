@@ -27,12 +27,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build ISO using cuckoo-iso-builder
-        uses: ./ # Uses the local action in the repository
+        uses: zeglius/cuckoo-iso-builder@main # Remember to pin by commit hash
         with:
           container-image: 'quay.io/fedora/fedora:42'
-          iso-path: 'release-artifacts'
+          iso-path: './iso/fedora-42.iso'
 ```
-If you are using this action from another repository, you would reference it as `uses: zeglius/cuckoo-iso-builder@main`.
 
 **Action Inputs:**
 
