@@ -209,6 +209,7 @@ github-step-end
 custom_post_hooks
 
 # Build the iso
+[ -d ./out ] || mkdir ./out && \
 podman run \
     --rm \
     -it \
