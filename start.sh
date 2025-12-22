@@ -120,6 +120,10 @@ podman-chroot 'cat > /usr/lib/tmpfiles.d/resolved.conf <<EOF
 L /etc/resolv.conf - - - - ../run/systemd/resolve/stub-resolv.conf
 EOF'
 
+# Disable zram-generator as zram breaks hard under an ISO environment
+podman-chroot 'echo "# Disabled for live sessions" > /usr/lib/systemd/zram-generator.conf'
+podman-chroot 'echo "# Disabled for live sessions" > /etc/systemd/zram-generator.conf'
+
 github-step-end
 
 if [ "$INCLUDE_CONTAINER_IN_ISO" = "yes" ]; then
