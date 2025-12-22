@@ -108,10 +108,10 @@ github-step "Basic System Tweaks"
 # Add contents from skel to /etc/skel
 rsync -rltDxv $_SCRIPTDIR/skel/ $SQUASHFS_CTR_IMAGE_MOUNTPOINT/etc/skel/
 
-# We replace /var/tmp with a symlink to /tmp, and we set podman's storage driver to vfs.
+# We create a /var/tmp directory that ISN'T a tmpfs, and we set podman's storage driver to vfs.
 # We also set the timezone to UTC, and remove a possible existing /etc/machine-id to prevent any weirdness with systemd-firstboot.
 podman-chroot 'ln -sf /usr/share/zoneinfo/UTC /etc/localtime && \
-  rm -rf /var/tmp && ln -sf /tmp /var/tmp'
+  [ -d /var/tmp ] || mkdir -p /var/tmp'
 
 # Create tmpfiles.d entry for systemd-resolved, and enable it. 
 # We will remove /etc/resolv.conf in build_iso.sh, as if we try to do so here, it won't let us. Podman currently manages /etc/resolv.conf through a mountpoint.
@@ -157,7 +157,7 @@ EOF
 "
 
 podman-chroot "useradd -UG wheel -d /var/home/liveuser liveuser && \
-mkdir -p /var/home || true && \
+[ -d /var/home ] || mkdir -p /var/home && \
 cp -r /etc/skel /var/home/liveuser && \
 passwd -d liveuser"
 
@@ -184,7 +184,7 @@ github-step "Build liveiso's initramfs with dracut"
 # Your image should have a kernel inside of it. If it doesn't, you will need to install one using custom_pre_hooks. 
 # It is recommended that you include a kernel inside of an image instead.
 podman-chroot "pacman -Sy --needed --noconfirm dracut parted"
-podman-chroot "mkdir -p /var/roothome || true"
+podman-chroot "[ -d /var/roothome ] || mkdir -p /var/roothome"
 echo "Building initramfs"
 podman-chroot 'kver=$(find /usr/lib/modules -maxdepth 1 -printf "%P" | head -1) DRACUT_NO_XATTR=1 && dracut \
     --kver="$kver" \
@@ -195,6 +195,13 @@ podman-chroot 'kver=$(find /usr/lib/modules -maxdepth 1 -printf "%P" | head -1) 
     --add "dmsquash-live dmsquash-live-autooverlay" \
     --force \
     /live-initramfs.img'
+
+github-step-end
+
+github-step "Cleanup"
+
+# Since we created /var/tmp and it isn't a tmpfs, we need to remove everything inside of it.
+podman-chroot "rm -rf /var/tmp/*"
 
 github-step-end
 
